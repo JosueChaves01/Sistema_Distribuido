@@ -28,6 +28,20 @@ class ResourceReport(BaseModel):
     ram: float
     net: float
     ip: str
+from typing import Optional
+
+class WorkerStatus(BaseModel):
+    name: str
+    status: str
+    task_id: Optional[str]
+
+@app.post("/working")
+def update_worker_task(data: WorkerStatus):
+    if data.name in workers:
+        workers[data.name]["status"] = data.status
+        workers[data.name]["task_id"] = data.task_id
+        workers[data.name]["last_seen"] = time.time()
+    return {"status": "updated"}
 
 @app.post("/register")
 def register_node(data: ResourceReport):
@@ -88,6 +102,23 @@ def receive_image(data: dict):
 def get_result_image(filename: str):
     from fastapi.responses import FileResponse
     return FileResponse(os.path.join("results", filename))
+
+def get_queue_length(queue_name='tareas'):
+    import pika
+    try:
+        connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+        channel = connection.channel()
+        q = channel.queue_declare(queue=queue_name, passive=True)
+        connection.close()
+        return q.method.message_count
+    except Exception as e:
+        return -1  # Error o no se puede acceder
+    
+@app.get("/queue_size")
+def queue_size():
+    count = get_queue_length()
+    return {"pending_tasks": count}
+
 
 if __name__ == "__main__":
     

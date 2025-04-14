@@ -5,12 +5,12 @@ from io import BytesIO
 import uvicorn
 import base64
 import threading
-
+from uuid import uuid4
 
 app = FastAPI()
 
 COORDINATOR_IP = "192.168.0.112"
-NODE_NAME = "main"
+NODE_NAME = "worker-1"
 
 def report_while_busy():
     for _ in range(5):  # puedes ajustar el número o usar un while con condición
@@ -71,12 +71,18 @@ import json
 
 def ejecutar_tarea(task):
     try:
+        # Notificar que el worker está ocupado
+        requests.post(f"http://{COORDINATOR_IP}:8000/working", json={
+            "name": NODE_NAME,
+            "status": "ejecutando tarea",
+            "task_id": str(uuid4())
+        })
+
         b64_data = task.get("image_data_b64")
         if not b64_data:
             print("[❌] No se recibió imagen.")
             return
 
-        print("[🔄] Ejecutando tarea...")
         threading.Thread(target=report_while_busy, daemon=True).start()
 
         img = Image.open(BytesIO(base64.b64decode(b64_data))).convert("L")
@@ -90,8 +96,16 @@ def ejecutar_tarea(task):
 
         print("[✅] Tarea procesada y resultado enviado.")
 
+        # Opcional: limpiar estado al terminar
+        requests.post(f"http://{COORDINATOR_IP}:8000/working", json={
+            "name": NODE_NAME,
+            "status": "libre",
+            "task_id": None
+        })
+
     except Exception as e:
         print("[❌] Error al ejecutar tarea:", str(e))
+
 
 def start_rabbitmq_consumer():
     def callback(ch, method, properties, body):
