@@ -67,26 +67,30 @@ async def upload_image(file: UploadFile = File(...)):
 
     b64_data = base64.b64encode(content).decode("utf-8")
 
-    task = {
-        "task_type": "filter",
-        "filter": "bw",
-        "image_data_b64": b64_data
-    }
-
     try:
         connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
         channel = connection.channel()
         channel.queue_declare(queue='tareas')
 
-        channel.basic_publish(
-            exchange='',
-            routing_key='tareas',
-            body=json.dumps(task)
-        )
+        for _ in range(50):
+            task = {
+                "task_type": "filter",
+                "filter": "bw",
+                "image_data_b64": b64_data,
+                "task_id": uuid4().hex 
+            }
+
+            channel.basic_publish(
+                exchange='',
+                routing_key='tareas',
+                body=json.dumps(task)
+            )
+
         connection.close()
-        return {"status": "sent", "message": "Tarea enviada a la cola"}
+        return {"status": "sent", "message": "50 tareas con task_id enviadas a la cola"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
     
 @app.post("/result-image")
 def receive_image(data: dict):
