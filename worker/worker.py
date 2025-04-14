@@ -10,7 +10,7 @@ from uuid import uuid4
 app = FastAPI()
 
 COORDINATOR_IP = "192.168.0.112"
-NODE_NAME = "worker-1"
+NODE_NAME = "worker-2"
 
 def report_while_busy():
     for _ in range(5):  # puedes ajustar el número o usar un while con condición
@@ -112,7 +112,10 @@ def start_rabbitmq_consumer():
         task = json.loads(body)
         ejecutar_tarea(task)
 
-    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+    credentials = pika.PlainCredentials('myuser', 'mypassword')
+    parameters = pika.ConnectionParameters('192.168.0.112', credentials=credentials)
+    connection = pika.BlockingConnection(parameters)
+    
     channel = connection.channel()
     channel.queue_declare(queue='tareas')
 
