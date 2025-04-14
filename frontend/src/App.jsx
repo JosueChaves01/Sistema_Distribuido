@@ -6,7 +6,7 @@ function App() {
   const [file, setFile] = useState(null);
 
   const fetchNodes = async () => {
-    const res = await fetch("http://192.168.0.108:8000/workers");
+    const res = await fetch("http://192.168.0.112:8000/workers");
     const data = await res.json();
     setNodes(data);
   };
@@ -21,7 +21,7 @@ function App() {
     const formData = new FormData();
     formData.append("file", file);
   
-    const res = await fetch("http://192.168.0.109:8000/upload", {
+    const res = await fetch("http://192.168.0.112:8000/upload", {
       method: "POST",
       body: formData,
     });
