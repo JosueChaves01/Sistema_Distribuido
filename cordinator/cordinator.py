@@ -70,7 +70,7 @@ async def upload_image(file: UploadFile = File(...)):
     try:
         connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
         channel = connection.channel()
-        channel.queue_declare(queue='tareas')
+        channel.queue_declare(queue='tareas', durable=True)
 
         for _ in range(50):
             task = {
@@ -112,7 +112,7 @@ def get_queue_length(queue_name='tareas'):
     try:
         connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
         channel = connection.channel()
-        q = channel.queue_declare(queue=queue_name, passive=True)
+        q = channel.queue_declare(queue=queue_name, durable=True, passive=True)
         connection.close()
         return q.method.message_count
     except Exception as e:

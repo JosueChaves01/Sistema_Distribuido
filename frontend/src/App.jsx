@@ -9,8 +9,8 @@ function App() {
   const fetchStatus = async () => {
     try {
       const [nodesRes, queueRes] = await Promise.all([
-        fetch("http://192.168.0.112:8000/workers"),
-        fetch("http://192.168.0.112:8000/queue_size"),
+        fetch("http://100.124.43.17:8000/workers"),
+        fetch("http://100.124.43.17:8000/queue_size"),
       ]);
 
       const nodesData = await nodesRes.json();
@@ -33,7 +33,7 @@ function App() {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await fetch("http://192.168.0.112:8000/upload", {
+    const res = await fetch("http://100.124.43.17:8000/upload", {
       method: "POST",
       body: formData,
     });

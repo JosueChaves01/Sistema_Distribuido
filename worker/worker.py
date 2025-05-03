@@ -9,7 +9,7 @@ from uuid import uuid4
 
 app = FastAPI()
 
-COORDINATOR_IP = "192.168.0.112"
+COORDINATOR_IP = "100.124.43.17"
 NODE_NAME = "worker-2"
 
 def report_while_busy():
@@ -24,7 +24,7 @@ def report_while_busy():
 def get_resource_usage():
     return {
         "name": NODE_NAME,
-        "cpu": psutil.cpu_percent(),
+        "cpu": psutil.cpu_percent(interval=1),
         "ram": psutil.virtual_memory().percent,
         "net": psutil.net_io_counters().bytes_sent,
         "ip": socket.gethostbyname(socket.gethostname())
@@ -113,11 +113,11 @@ def start_rabbitmq_consumer():
         ejecutar_tarea(task)
 
     credentials = pika.PlainCredentials('myuser', 'mypassword')
-    parameters = pika.ConnectionParameters('192.168.0.112', credentials=credentials)
+    parameters = pika.ConnectionParameters('100.124.43.17', credentials=credentials)
     connection = pika.BlockingConnection(parameters)
     
     channel = connection.channel()
-    channel.queue_declare(queue='tareas')
+    channel.queue_declare(queue='tareas', durable=True)
 
     channel.basic_consume(queue='tareas', on_message_callback=callback, auto_ack=True)
     print("[📡] Esperando tareas de RabbitMQ...")
@@ -127,4 +127,4 @@ def start_rabbitmq_consumer():
 if __name__ == "__main__":
     threading.Thread(target=background_report, daemon=True).start()
     threading.Thread(target=start_rabbitmq_consumer, daemon=True).start()
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=8002)
