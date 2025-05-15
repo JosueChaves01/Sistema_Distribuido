@@ -10,6 +10,8 @@ import base64
 import uvicorn
 import pika
 import json
+from contextlib import contextmanager
+
 app = FastAPI()
 
 app.add_middleware(
@@ -34,6 +36,23 @@ class WorkerStatus(BaseModel):
     name: str
     status: str
     task_id: Optional[str]
+
+@contextmanager
+def rabbitmq_channel():
+    connection = None
+    try:
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host='100.124.43.17',  # <- IP Tailscale del servidor RabbitMQ
+                port=5672,             # RabbitMQ usa por defecto el puerto 5672 para conexiones AMQP
+                credentials=pika.PlainCredentials('myuser', 'mypassword')
+            )
+        )
+        channel = connection.channel()
+        yield channel
+    finally:
+        if connection and connection.is_open:
+            connection.close()
 
 @app.post("/working")
 def update_worker_task(data: WorkerStatus):
@@ -68,25 +87,25 @@ async def upload_image(file: UploadFile = File(...)):
     b64_data = base64.b64encode(content).decode("utf-8")
 
     try:
-        connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-        channel = connection.channel()
-        channel.queue_declare(queue='tareas', durable=True)
-
-        for _ in range(50):
-            task = {
-                "task_type": "filter",
-                "filter": "bw",
-                "image_data_b64": b64_data,
-                "task_id": uuid4().hex 
-            }
-
-            channel.basic_publish(
-                exchange='',
-                routing_key='tareas',
-                body=json.dumps(task)
-            )
-
-        connection.close()
+        with rabbitmq_channel() as channel:
+            channel.queue_declare(queue='tareas', durable=True)
+            
+            for _ in range(50):
+                task = {
+                    "task_type": "filter",
+                    "filter": "bw",
+                    "image_data_b64": b64_data,
+                    "task_id": uuid4().hex
+                }
+                channel.basic_publish(
+                    exchange='',
+                    routing_key='tareas',
+                    body=json.dumps(task),
+                    properties=pika.BasicProperties(
+                        delivery_mode=2  # Persistente
+                    )
+                )
+            
         return {"status": "sent", "message": "50 tareas con task_id enviadas a la cola"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -107,17 +126,15 @@ def get_result_image(filename: str):
     from fastapi.responses import FileResponse
     return FileResponse(os.path.join("results", filename))
 
-def get_queue_length(queue_name='tareas'):
-    import pika
+def get_queue_length(queue_name='tareas') -> int:
     try:
-        connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-        channel = connection.channel()
-        q = channel.queue_declare(queue=queue_name, durable=True, passive=True)
-        connection.close()
-        return q.method.message_count
+        with rabbitmq_channel() as channel:
+            q = channel.queue_declare(queue=queue_name, durable=True, passive=True)
+            return q.method.message_count
     except Exception as e:
-        return -1  # Error o no se puede acceder
-    
+        print(f"Error al obtener tamaño de cola: {str(e)}")
+        return -1
+
 @app.get("/queue_size")
 def queue_size():
     count = get_queue_length()

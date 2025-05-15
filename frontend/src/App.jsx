@@ -49,14 +49,14 @@ function App() {
 
   useEffect(() => {
     fetchStatus();
-    const interval = setInterval(fetchStatus, 3000);
+    const interval = setInterval(fetchStatus, 900);
     return () => clearInterval(interval);
   }, []);
 
   return (
     <div style={{ padding: "2rem" }}>
       <h1>Sistema Distribuido</h1>
-      <h3>📦 Tareas en cola: {queueSize}</h3>
+      <h3>Tareas en cola: {queueSize}</h3>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
         {Object.entries(nodes).map(([name, info]) => (
