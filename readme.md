@@ -186,3 +186,4 @@ python worker_async.py
 ---
 Si tienes problemas adicionales, revisa los logs de RabbitMQ y de los servicios Python, y consulta la documentación oficial de cada componente.
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/JosueChaves01/Sistema_Distribuido)
