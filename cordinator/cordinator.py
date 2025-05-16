@@ -129,8 +129,8 @@ def receive_image(data: dict):
     filename = f"{uuid4().hex}.png"
     path = os.path.join("results", filename)
     os.makedirs("results", exist_ok=True)
-    with open(path, "wb") as f:
-        f.write(bytes.fromhex(image_data))
+    #with open(path, "wb") as f:
+    #    f.write(bytes.fromhex(image_data))
     processed_count += 1
     return {"status": "received", "filename": filename}
 
