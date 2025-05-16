@@ -24,12 +24,18 @@
    winget install Schniz.fnm
    fnm install 22
 
-# Verificar la version de Node.js:
-node -v # Should print "v22.14.0".
+### Verificar la version de Node.js:
 
-# Verificar la version de npm:
+- Ejecuta en la terminal:
+     ```cmd
+     node -v # Should print "v22.14.0"
+     ```
+### Verificar la version de npm:
 npm -v # Should print "10.9.2".
-
+- Ejecuta en la terminal:
+     ```cmd
+     npm -v # Should print "10.9.2".
+     ```
 ---
 
 ## 🌐 Uso de Tailscale para Red Privada
@@ -174,7 +180,7 @@ python worker_async.py
     #     return
     ```
   - Esto permite que el sistema procese tareas a la máxima velocidad posible según el hardware y la red.
-  
+
 ---
 Si tienes problemas adicionales, revisa los logs de RabbitMQ y de los servicios Python, y consulta la documentación oficial de cada componente.
 
