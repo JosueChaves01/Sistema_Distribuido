@@ -13,7 +13,7 @@ import json
 # Configuración
 COORDINATOR_IP = "100.120.4.105"
 NODE_NAME = "worker-1"
-RABBIT_HOST = "100.120.4.105"
+RABBIT_HOST = COORDINATOR_IP
 RABBIT_PORT = 5672
 RABBIT_USER = "myuser"
 RABBIT_PASS = "mypassword"

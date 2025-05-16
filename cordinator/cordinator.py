@@ -43,7 +43,7 @@ def rabbitmq_channel():
     try:
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
-                host='100.124.43.17',  # <- IP Tailscale del servidor RabbitMQ
+                host='100.120.4.105',  # <- IP Tailscale del servidor RabbitMQ
                 port=5672,             # RabbitMQ usa por defecto el puerto 5672 para conexiones AMQP
                 credentials=pika.PlainCredentials('myuser', 'mypassword')
             )
@@ -117,8 +117,8 @@ def receive_image(data: dict):
     filename = f"{uuid4().hex}.png"
     path = os.path.join("results", filename)
     os.makedirs("results", exist_ok=True)
-    with open(path, "wb") as f:
-        f.write(bytes.fromhex(image_data))
+    #with open(path, "wb") as f:
+    #    f.write(bytes.fromhex(image_data))
     return {"status": "received", "filename": filename}
 
 @app.get("/result/{filename}")
@@ -142,5 +142,4 @@ def queue_size():
 
 
 if __name__ == "__main__":
-    
     uvicorn.run(app, host="0.0.0.0", port=8000)
