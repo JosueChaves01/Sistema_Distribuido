@@ -28,14 +28,17 @@
 
 - Ejecuta en la terminal:
      ```cmd
-     node -v # Should print "v22.14.0"
+     node -v 
      ```
+
+
 ### Verificar la version de npm:
 npm -v # Should print "10.9.2".
 - Ejecuta en la terminal:
      ```cmd
-     npm -v # Should print "10.9.2".
+     npm -v 
      ```
+
 ---
 
 ## 🌐 Uso de Tailscale para Red Privada
