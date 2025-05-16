@@ -12,7 +12,7 @@ import json
 
 # Configuración
 COORDINATOR_IP = "100.120.4.105"
-NODE_NAME = "worker-2"
+NODE_NAME = "worker-1"
 RABBIT_HOST = "100.120.4.105"
 RABBIT_PORT = 5672
 RABBIT_USER = "myuser"
@@ -96,7 +96,6 @@ def ejecutar_tarea(ch, method, properties, body):
 
 # Consumidor de RabbitMQ
 def start_rabbitmq_consumer():
-    print("[🔌] Iniciando consumidor de RabbitMQ…")
     creds = pika.PlainCredentials(RABBIT_USER, RABBIT_PASS)
     params = pika.ConnectionParameters(
         host=RABBIT_HOST,
@@ -110,7 +109,6 @@ def start_rabbitmq_consumer():
         connection = pika.BlockingConnection(params)
         channel = connection.channel()
         channel.queue_declare(queue='tareas', durable=True)
-        print("[📡] Esperando tareas de RabbitMQ…")
         channel.basic_qos(prefetch_count=1)
         channel.basic_consume(queue='tareas', on_message_callback=callback, auto_ack=False)
         channel.start_consuming()
