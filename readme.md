@@ -27,14 +27,16 @@
 ### Verificar la version de Node.js:
 
 - Ejecuta en la terminal:
+
      ```cmd
      node -v 
      ```
 
 
 ### Verificar la version de npm:
-npm -v # Should print "10.9.2".
+
 - Ejecuta en la terminal:
+
      ```cmd
      npm -v 
      ```
@@ -121,9 +123,6 @@ Este sistema está pensado para funcionar en una red privada virtual usando [Tai
 - **No se guardan los resultados de las imágenes:**
   - Verifica que la carpeta `results/` existe y tiene permisos de escritura.
   - Revisa los logs del coordinador para errores al guardar archivos.
-
----
-
 
 ---
 
