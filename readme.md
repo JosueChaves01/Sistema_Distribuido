@@ -115,5 +115,66 @@ Este sistema está pensado para funcionar en una red privada virtual usando [Tai
 
 ---
 
+
+---
+
+## 🏎️ Worker asíncrono con aio-pika (`worker_async.py`)
+
+A partir de la versión actual, el sistema soporta dos tipos de worker para procesar tareas desde RabbitMQ:
+
+### 1. Worker tradicional (`worker.py`)
+- **Tecnología:** `threading` + `pika.BlockingConnection`
+- **Ventajas:**
+  - Sencillo de entender y depurar.
+  - Adecuado para cargas moderadas y entornos donde la compatibilidad es prioritaria.
+- **Limitaciones:**
+  - El Global Interpreter Lock (GIL) de Python limita el paralelismo real en tareas intensivas de CPU.
+  - El consumo de recursos puede escalar menos eficientemente con muchos hilos.
+
+### 2. Worker asíncrono (`worker_async.py`)
+- **Tecnología:** `asyncio` + `aio-pika`
+- **Ventajas:**
+  - Mejor manejo de concurrencia y escalabilidad, especialmente en tareas I/O intensivas o cuando hay muchos mensajes pendientes.
+  - Permite lanzar múltiples consumidores asíncronos, autoajustando el número de "hilos" lógicos y el prefetch según la carga y los workers activos.
+  - Menor sobrecarga de contexto que el threading tradicional.
+- **Limitaciones:**
+  - Requiere Python 3.7+ y la librería `aio-pika`.
+  - La lógica de procesamiento debe ser compatible con `asyncio`.
+
+### ¿Cuándo usar cada uno?
+- **Usa `worker.py`** si tu entorno no soporta bien `asyncio`, si prefieres un modelo clásico de hilos, o para pruebas rápidas.
+- **Usa `worker_async.py`** para máxima eficiencia, especialmente si tienes muchas tareas pendientes, workers distribuidos, o buscas aprovechar mejor los recursos del sistema.
+
+### Instalación de dependencias para el worker asíncrono
+
+Ejecuta en la carpeta `worker/`:
+
+```powershell
+pip install aio-pika
+```
+
+### Ejecución del worker asíncrono
+
+```powershell
+python worker_async.py
+```
+
+### Recomendaciones y autoajuste
+- El worker asíncrono ajusta automáticamente el número de consumidores y el prefetch según la carga y el número de workers activos.
+- Puedes modificar la función `get_optimal_params()` en `worker_async.py` para personalizar la lógica de autoajuste.
+- Si quieres forzar el máximo rendimiento, asegúrate de que no hay límites artificiales de CPU y que la red no es un cuello de botella.
+
+
+- **Optimización de procesamiento en el worker:**
+  - El worker ahora lanza automáticamente tantos hilos consumidores de RabbitMQ como núcleos de CPU tenga la máquina, para aprovechar al máximo los recursos disponibles.
+  - El límite de procesamiento por uso de CPU es configurable. Si quieres medir el máximo rendimiento, puedes comentar la línea que limita el procesamiento por uso de CPU en el archivo `worker.py`:
+    ```python
+    # if psutil.cpu_percent(interval=1) > 95:
+    #     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+    #     return
+    ```
+  - Esto permite que el sistema procese tareas a la máxima velocidad posible según el hardware y la red.
+  
+---
 Si tienes problemas adicionales, revisa los logs de RabbitMQ y de los servicios Python, y consulta la documentación oficial de cada componente.
 

@@ -1,25 +1,22 @@
-import psutil, time, requests, socket
+import asyncio
+import aio_pika
+import psutil, time, requests, socket, base64, json, os
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from io import BytesIO
-import uvicorn
-import base64
-import threading
 from uuid import uuid4
-from PIL import Image, ImageFilter
-import pika
-import json
-import os
+from PIL import Image
+import uvicorn
+import threading
 
-# Configuración
 COORDINATOR_IP = "100.120.4.105"
-NODE_NAME = "worker-2"
+NODE_NAME = "worker-1"
 RABBIT_HOST = COORDINATOR_IP
 RABBIT_PORT = 5672
 RABBIT_USER = "myuser"
 RABBIT_PASS = "mypassword"
 
-# Funciones de utilidad
+# Utilidad para recursos
 
 def get_resource_usage():
     usage = psutil.cpu_times_percent(interval=None)
@@ -32,6 +29,7 @@ def get_resource_usage():
     }
 
 # Reporte periódico de recursos
+
 def background_report():
     while True:
         try:
@@ -40,7 +38,8 @@ def background_report():
             pass
         time.sleep(0.5)
 
-# Registro inicial en coordinador (sin bloquear startup)
+# Registro inicial en coordinador
+
 def try_register():
     try:
         data = get_resource_usage()
@@ -49,13 +48,8 @@ def try_register():
     except Exception as e:
         print(f"[⚠️] Error al registrarse: {e}")
 
-# Lógica de procesamiento de tarea
-
-def callback(ch, method, properties, body):
-    ejecutar_tarea(ch, method, properties, body)
-
-
-def ejecutar_tarea(ch, method, properties, body):
+# Procesamiento de tarea
+async def process_task(body):
     try:
         # Notificar estado ocupado
         requests.post(f"http://{COORDINATOR_IP}:8000/working", json={
@@ -64,16 +58,9 @@ def ejecutar_tarea(ch, method, properties, body):
             "task_id": str(uuid4())
         }, timeout=5)
 
-        # (OPCIONAL) Puedes comentar la siguiente línea para no limitar por CPU:
-        if psutil.cpu_percent(interval=1) > 100:
-            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
-            return
-
-        # Procesar imagen
         task = json.loads(body)
         b64_data = task.get("image_data_b64")
         if not b64_data:
-            ch.basic_ack(delivery_tag=method.delivery_tag)
             return
         img = Image.open(BytesIO(base64.b64decode(b64_data))).convert("L")
         buf = BytesIO()
@@ -82,7 +69,6 @@ def ejecutar_tarea(ch, method, properties, body):
 
         # Enviar resultado
         requests.post(f"http://{COORDINATOR_IP}:8000/result-image", json={"image": result_hex}, timeout=5)
-        ch.basic_ack(delivery_tag=method.delivery_tag)
 
         # Limpiar estado
         requests.post(f"http://{COORDINATOR_IP}:8000/working", json={
@@ -90,22 +76,19 @@ def ejecutar_tarea(ch, method, properties, body):
             "status": "libre",
             "task_id": None
         }, timeout=5)
-
     except Exception as e:
         print(f"[❌] Error al ejecutar tarea: {e}")
-        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+
+# Optimización de parámetros
 
 def get_optimal_params():
-    # Consulta el coordinador para obtener el número de workers y tareas en cola
     try:
         workers_info = requests.get(f"http://{COORDINATOR_IP}:8000/workers", timeout=5).json()
         queue_info = requests.get(f"http://{COORDINATOR_IP}:8000/queue_size", timeout=5).json()
-        num_workers = len(workers_info)
         pending_tasks = queue_info.get("pending_tasks", 0)
-        # Estrategia simple: más tareas en cola y menos workers => más hilos
         cpu_count = os.cpu_count() or 2
         if pending_tasks > 100:
-            threads = min(cpu_count * 2, 32)  # Escala hasta el doble de núcleos, máximo 32
+            threads = min(cpu_count * 2, 32)
             prefetch = 4
         elif pending_tasks > 0:
             threads = cpu_count
@@ -118,43 +101,41 @@ def get_optimal_params():
         print(f"[⚠️] No se pudo optimizar parámetros automáticamente: {e}")
         return os.cpu_count() or 2, 1
 
-# Consumidor de RabbitMQ
-def start_rabbitmq_consumer(prefetch_count=1):
-    creds = pika.PlainCredentials(RABBIT_USER, RABBIT_PASS)
-    params = pika.ConnectionParameters(
+# Consumidor asíncrono de RabbitMQ
+async def start_async_rabbitmq_consumer(prefetch_count=1):
+    connection = await aio_pika.connect_robust(
         host=RABBIT_HOST,
         port=RABBIT_PORT,
-        virtual_host='/',
-        credentials=creds,
-        heartbeat=60,
-        blocked_connection_timeout=30
+        login=RABBIT_USER,
+        password=RABBIT_PASS,
+        virtualhost="/"
     )
-    try:
-        connection = pika.BlockingConnection(params)
-        channel = connection.channel()
-        channel.queue_declare(queue='tareas', durable=True)
-        channel.basic_qos(prefetch_count=prefetch_count)
-        channel.basic_consume(queue='tareas', on_message_callback=callback, auto_ack=False)
-        channel.start_consuming()
-    except Exception as e:
-        print(f"[❌] No pude conectar/consumir RabbitMQ: {e}")
+    channel = await connection.channel()
+    await channel.set_qos(prefetch_count=prefetch_count)
+    queue = await channel.declare_queue("tareas", durable=True)
 
-# Configuración de FastAPI con lifespan
-def create_app():
-    @asynccontextmanager
-    async def lifespan(app: FastAPI):
-        threading.Thread(target=background_report, daemon=True).start()
-        num_threads, prefetch = get_optimal_params()
-        print(f"[Worker] Lanzando {num_threads} consumidores de RabbitMQ (prefetch={prefetch})")
-        for _ in range(num_threads):
-            threading.Thread(target=start_rabbitmq_consumer, args=(prefetch,), daemon=True).start()
-        threading.Thread(target=try_register, daemon=True).start()
-        yield
+    async with queue.iterator() as queue_iter:
+        async for message in queue_iter:
+            async with message.process():
+                await process_task(message.body)
 
-    app = FastAPI(lifespan=lifespan)
-    return app
+# FastAPI y arranque
+app = FastAPI()
 
-app = create_app()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    threading.Thread(target=background_report, daemon=True).start()
+    num_threads, prefetch = get_optimal_params()
+    print(f"[Worker] Lanzando {8} consumidores asíncronos de RabbitMQ (prefetch={10})")
+    tasks = []
+    for _ in range(num_threads):
+        tasks.append(asyncio.create_task(start_async_rabbitmq_consumer(prefetch)))
+    threading.Thread(target=try_register, daemon=True).start()
+    yield
+    for t in tasks:
+        t.cancel()
+
+app = FastAPI(lifespan=lifespan)
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8003)
+    uvicorn.run(app, host='0.0.0.0', port=8002)

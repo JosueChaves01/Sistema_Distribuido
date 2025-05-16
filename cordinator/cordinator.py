@@ -11,6 +11,7 @@ import uvicorn
 import pika
 import json
 from contextlib import contextmanager
+import threading
 
 app = FastAPI()
 
@@ -110,15 +111,27 @@ async def upload_image(file: UploadFile = File(...)):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-    
+# Contador de tareas procesadas por segundo
+processed_count = 0
+last_tps = 0
+
+def tps_counter():
+    global processed_count, last_tps
+    while True:
+        time.sleep(1)
+        last_tps = processed_count
+        processed_count = 0
+
 @app.post("/result-image")
 def receive_image(data: dict):
+    global processed_count
     image_data = data["image"]
     filename = f"{uuid4().hex}.png"
     path = os.path.join("results", filename)
     os.makedirs("results", exist_ok=True)
-    #with open(path, "wb") as f:
-    #    f.write(bytes.fromhex(image_data))
+    with open(path, "wb") as f:
+        f.write(bytes.fromhex(image_data))
+    processed_count += 1
     return {"status": "received", "filename": filename}
 
 @app.get("/result/{filename}")
@@ -140,6 +153,11 @@ def queue_size():
     count = get_queue_length()
     return {"pending_tasks": count}
 
+@app.get("/tps")
+def get_tps():
+    return {"tps": last_tps}
+
 
 if __name__ == "__main__":
+    threading.Thread(target=tps_counter, daemon=True).start()
     uvicorn.run(app, host="0.0.0.0", port=8000)
