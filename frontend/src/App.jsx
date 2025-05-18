@@ -1,18 +1,39 @@
 import { useEffect, useState } from "react";
 import NodeCard from "./components/NodeCard";
+import "./App.css";
 
 function App() {
-  const [nodes, setNodes] = useState({});
+  //const [nodes, setNodes] = useState({});
   const [queueSize, setQueueSize] = useState(0);
   const [file, setFile] = useState(null);
   const [tps, setTps] = useState(0);
+  const [nodes, setNodes] = useState({
+    "worker-1": {
+      cpu: 45,
+      ram: 70,
+      net: 123456,
+      ip: "192.168.0.101",
+      status: "libre",
+      task_id: null,
+      isCoordinator: true,
+    },
+    "worker-2": {
+      cpu: 30,
+      ram: 50,
+      net: 789012,
+      ip: "192.168.0.102",
+      status: "ejecutando tarea",
+      task_id: "abc123",
+      isCoordinator: false,
+    },
+  });
 
   const fetchStatus = async () => {
     try {
       const [nodesRes, queueRes, tpsRes] = await Promise.all([
         fetch("http://100.120.4.105:8000/workers"),
         fetch("http://100.120.4.105:8000/queue_size"),
-        fetch("http://100.120.4.105:8000/tps")
+        fetch("http://100.120.4.105:8000/tps"),
       ]);
 
       const nodesData = await nodesRes.json();
@@ -58,14 +79,19 @@ function App() {
   }, []);
 
   return (
-    <div style={{ padding: "2rem" }}>
+    <div className="container">
       <h1>Sistema Distribuido</h1>
       <h3>Tareas en cola: {queueSize}</h3>
       <h3>Tareas procesadas por segundo (TPS): {tps}</h3>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
+      <div className="card-list">
         {Object.entries(nodes).map(([name, info]) => (
-          <NodeCard key={name} name={name} info={info} />
+          <NodeCard
+            key={name}
+            name={name}
+            info={info}
+            isCoordinator={info.isCoordinator}
+          />
         ))}
       </div>
 
