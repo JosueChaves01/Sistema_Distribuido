@@ -186,4 +186,40 @@ python worker_async.py
 ---
 Si tienes problemas adicionales, revisa los logs de RabbitMQ y de los servicios Python, y consulta la documentación oficial de cada componente.
 
+
+---
+
+## 📚 Documentación de la API
+
+El coordinador expone una API REST para interactuar con el sistema distribuido. Los endpoints principales son:
+
+- `POST /upload`: Sube una imagen y genera tareas de procesamiento en la cola RabbitMQ.
+- `POST /task`: (Personalizable) Permite enviar tareas personalizadas, como instrucciones de juegos retro o comandos arbitrarios. El cuerpo debe ser un JSON con los datos de la tarea.
+- `GET /workers`: Devuelve el estado de todos los workers registrados.
+- `GET /queue_size`: Devuelve el número de tareas pendientes en la cola.
+- `GET /tps`: Devuelve el número de tareas procesadas por segundo (TPS).
+- `POST /report`, `POST /register`, `POST /working`: Usados internamente por los workers para reportar estado y recursos.
+- `POST /result-image`: Recibe los resultados procesados por los workers.
+- `GET /result/{filename}`: Descarga el resultado de una tarea procesada.
+
+---
+
+## 🤝 Contribuciones y Créditos
+
+- **Autores principal:** Josue Chaves. Josue Quesada. Joyce Ugalde. 
+- 
+- **Tecnologías y recursos utilizados:**
+  - [FastAPI](https://fastapi.tiangolo.com/)
+  - [RabbitMQ](https://www.rabbitmq.com/)
+  - [aio-pika](https://aio-pika.readthedocs.io/)
+  - [React](https://react.dev/)
+  - [Tailscale](https://tailscale.com/)
+  - [Pillow](https://python-pillow.org/)
+  - [psutil](https://psutil.readthedocs.io/)
+  - [uvicorn](https://www.uvicorn.org/)
+  - [pika](https://pika.readthedocs.io/)
+- **Agradecimientos:**
+  - A la comunidad de código abierto y a los autores de las librerías utilizadas.
+---
+
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/JosueChaves01/Sistema_Distribuido)
