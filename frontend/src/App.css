@@ -2,6 +2,7 @@
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
+  padding-top: 0;
   text-align: center;
 }
 
@@ -37,6 +38,24 @@
   padding: 2rem;
   padding-top: 0;
   text-align: center;
+}
+
+.status {
+  justify-content: left;
+  width: 40%;
+  background-color: #fff1f1;
+  border-radius: 10px;
+  padding-top: 1px;
+  padding-bottom: 1px;
+  margin-bottom: 1rem;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 1px 1px 3px rgb(134, 134, 134);
+}
+
+.status h3 {
+  text-align: left;
+  padding-left: 2rem;
 }
 
 .card-list {

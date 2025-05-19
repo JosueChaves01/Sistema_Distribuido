@@ -9,10 +9,39 @@ const formatBytes = (bytes) => {
 const NodeCard = ({ name, info, isCoordinator }) => {
   return (
     <div className="card">
-      <h3>{name}</h3>
-      <p>
-        <strong>CPU:</strong> {info.cpu}%
-      </p>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <h3 style={{ margin: 0 }}>
+          <span style={{ color: "#194dcf" }}>{name}</span>
+        </h3>
+        {isCoordinator && (
+          <span
+            style={{
+              background: "#194dcf",
+              color: "white",
+              padding: "2px 10px",
+              borderRadius: "12px",
+              fontSize: "0.85em",
+              fontWeight: "bold",
+              marginLeft: "10px",
+              marginTop: "2px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Coordinador
+          </span>
+        )}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", marginTop: "8px" }}>
+        <p style={{ margin: 0 }}>
+          <strong>CPU:</strong> {info.cpu}%
+        </p>
+      </div>
       <p>
         <strong>RAM:</strong> {info.ram}%
       </p>
@@ -28,22 +57,6 @@ const NodeCard = ({ name, info, isCoordinator }) => {
       <p>
         <strong>Tarea actual:</strong> {info.task_id || "ninguna"}
       </p>
-      {isCoordinator && (
-        <span
-          style={{
-            background: "#1976d2",
-            color: "#fff",
-            padding: "2px 10px",
-            borderRadius: "12px",
-            fontSize: "0.85em",
-            fontWeight: "bold",
-            display: "inline-block",
-            margin: "0px auto 0 auto",
-          }}
-        >
-          Coordinador
-        </span>
-      )}
     </div>
   );
 };

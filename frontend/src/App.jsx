@@ -3,30 +3,30 @@ import NodeCard from "./components/NodeCard";
 import "./App.css";
 
 function App() {
-  //const [nodes, setNodes] = useState({});
+  const [nodes, setNodes] = useState({});
   const [queueSize, setQueueSize] = useState(0);
   const [file, setFile] = useState(null);
   const [tps, setTps] = useState(0);
-  const [nodes, setNodes] = useState({
-    "worker-1": {
-      cpu: 45,
-      ram: 70,
-      net: 123456,
-      ip: "192.168.0.101",
-      status: "libre",
-      task_id: null,
-      isCoordinator: true,
-    },
-    "worker-2": {
-      cpu: 30,
-      ram: 50,
-      net: 789012,
-      ip: "192.168.0.102",
-      status: "ejecutando tarea",
-      task_id: "abc123",
-      isCoordinator: false,
-    },
-  });
+  // const [nodes, setNodes] = useState({
+  //   "worker-1": {
+  //     cpu: 45,
+  //     ram: 70,
+  //     net: 123456,
+  //     ip: "192.168.0.101",
+  //     status: "libre",
+  //     task_id: null,
+  //     isCoordinator: true,
+  //   },
+  //   "worker-2": {
+  //     cpu: 30,
+  //     ram: 50,
+  //     net: 789012,
+  //     ip: "192.168.0.102",
+  //     status: "ejecutando tarea",
+  //     task_id: "abc123",
+  //     isCoordinator: false,
+  //   },
+  // });
 
   const fetchStatus = async () => {
     try {
@@ -81,8 +81,15 @@ function App() {
   return (
     <div className="container">
       <h1>Sistema Distribuido</h1>
-      <h3>Tareas en cola: {queueSize}</h3>
-      <h3>Tareas procesadas por segundo (TPS): {tps}</h3>
+      <div className="status">
+        <h3>
+          Tareas en cola: <span style={{ color: "#194dcf" }}>{queueSize}</span>
+        </h3>
+        <h3>
+          Tareas procesadas por segundo (TPS):{" "}
+          <span style={{ color: "#194dcf" }}>{tps}</span>
+        </h3>
+      </div>
 
       <div className="card-list">
         {Object.entries(nodes).map(([name, info]) => (
@@ -98,8 +105,10 @@ function App() {
       <hr />
 
       <h2>Subir imagen para procesar</h2>
-      <input type="file" onChange={handleFileChange} />
-      <button onClick={handleUpload}>Enviar imagen</button>
+      <input className="input" type="file" onChange={handleFileChange} />
+      <button className="button" onClick={handleUpload}>
+        <strong>Enviar imagen</strong>
+      </button>
     </div>
   );
 }
