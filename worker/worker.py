@@ -19,15 +19,36 @@ RABBIT_PORT = 5672
 RABBIT_USER = "myuser"
 RABBIT_PASS = "mypassword"
 
+# Guardar el valor anterior de bytes enviados y recibidos para calcular el uso por segundo
+last_net_bytes = [0]
+last_time = [time.time()]
+first_call = [True]
+
 # Funciones de utilidad
 
 def get_resource_usage():
     usage = psutil.cpu_times_percent(interval=None)
+    # Calcular MB/s de red sumando todas las interfaces (incluyendo loopback si existe)
+    net = psutil.net_io_counters(pernic=True)
+    total_bytes = 0
+    for iface, counters in net.items():
+        total_bytes += counters.bytes_sent + counters.bytes_recv
+    current_time = time.time()
+    elapsed = current_time - last_time[0]
+    if first_call[0]:
+        net_mbs = 0.0
+        first_call[0] = False
+    elif elapsed > 0:
+        net_mbs = (total_bytes - last_net_bytes[0]) / 1024 / 1024 / elapsed
+    else:
+        net_mbs = 0.0
+    last_net_bytes[0] = total_bytes
+    last_time[0] = current_time
     return {
         "name": NODE_NAME,
         "cpu": round(usage.user + usage.system, 2),
         "ram": psutil.virtual_memory().percent,
-        "net": psutil.net_io_counters().bytes_sent,
+        "net": round(net_mbs, 2),  # MB/s (envío + recepción)
         "ip": socket.gethostbyname(socket.gethostname())
     }
 
@@ -35,10 +56,11 @@ def get_resource_usage():
 def background_report():
     while True:
         try:
-            requests.post(f"http://{COORDINATOR_IP}:8000/report", json=get_resource_usage(), timeout=5)
-        except Exception:
-            pass
-        time.sleep(0.5)
+            usage = get_resource_usage()
+            requests.post(f"http://{COORDINATOR_IP}:8000/report", json=usage, timeout=5)
+        except Exception as e:
+            print(f"[DEBUG] Error en background_report: {e}")
+        time.sleep(1)  # Intervalo aumentado a 1 segundo para mayor estabilidad
 
 # Registro inicial en coordinador (sin bloquear startup)
 def try_register():

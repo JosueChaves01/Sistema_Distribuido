@@ -1,12 +1,6 @@
-const formatBytes = (bytes) => {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return (bytes / Math.pow(k, i)).toFixed(2) + " " + sizes[i];
-};
+const formatMbs = (mbs) => `${mbs.toFixed(2)} MB/s`;
 
-const NodeCard = ({ name, info, isCoordinator }) => {
+const NodeCard = ({ name, info, isCoordinator, isLocal }) => {
   return (
     <div className="card">
       <div
@@ -18,8 +12,7 @@ const NodeCard = ({ name, info, isCoordinator }) => {
       >
         <h3 style={{ margin: 0 }}>
           <span style={{ color: "#194dcf" }}>{name}</span>
-        </h3>
-        {isCoordinator && (
+          {isLocal && (
           <span
             style={{
               background: "#194dcf",
@@ -36,6 +29,7 @@ const NodeCard = ({ name, info, isCoordinator }) => {
             Coordinador
           </span>
         )}
+        </h3>
       </div>
       <div style={{ display: "flex", alignItems: "center", marginTop: "8px" }}>
         <p style={{ margin: 0 }}>
@@ -46,7 +40,7 @@ const NodeCard = ({ name, info, isCoordinator }) => {
         <strong>RAM:</strong> {info.ram}%
       </p>
       <p>
-        <strong>Red:</strong> {formatBytes(info.net)}
+        <strong>Red:</strong> {formatMbs(info.net)}
       </p>
       <p>
         <strong>IP:</strong> {info.ip}

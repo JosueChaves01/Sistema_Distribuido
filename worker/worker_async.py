@@ -15,16 +15,35 @@ RABBIT_HOST = COORDINATOR_IP
 RABBIT_PORT = 5672
 RABBIT_USER = "myuser"
 RABBIT_PASS = "mypassword"
+last_net_bytes = [0]
+last_time = [time.time()]
+first_call = [True]
 
-# Utilidad para recursos
+
 
 def get_resource_usage():
     usage = psutil.cpu_times_percent(interval=None)
+    # Calcular MB/s de red sumando todas las interfaces (incluyendo loopback si existe)
+    net = psutil.net_io_counters(pernic=True)
+    total_bytes = 0
+    for iface, counters in net.items():
+        total_bytes += counters.bytes_sent + counters.bytes_recv
+    current_time = time.time()
+    elapsed = current_time - last_time[0]
+    if first_call[0]:
+        net_mbs = 0.0
+        first_call[0] = False
+    elif elapsed > 0:
+        net_mbs = (total_bytes - last_net_bytes[0]) / 1024 / 1024 / elapsed
+    else:
+        net_mbs = 0.0
+    last_net_bytes[0] = total_bytes
+    last_time[0] = current_time
     return {
         "name": NODE_NAME,
         "cpu": round(usage.user + usage.system, 2),
         "ram": psutil.virtual_memory().percent,
-        "net": psutil.net_io_counters().bytes_sent,
+        "net": round(net_mbs, 2),  # MB/s (envío + recepción)
         "ip": socket.gethostbyname(socket.gethostname())
     }
 

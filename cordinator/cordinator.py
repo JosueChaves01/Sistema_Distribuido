@@ -12,6 +12,7 @@ import pika
 import json
 from contextlib import contextmanager
 import threading
+import socket
 
 app = FastAPI()
 
@@ -45,7 +46,7 @@ def rabbitmq_channel():
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
                 host='100.120.4.105',  # <- IP Tailscale del servidor RabbitMQ
-                port=5672,             # RabbitMQ usa por defecto el puerto 5672 para conexiones AMQP
+                port=5672,   
                 credentials=pika.PlainCredentials('myuser', 'mypassword')
             )
         )
@@ -54,6 +55,26 @@ def rabbitmq_channel():
     finally:
         if connection and connection.is_open:
             connection.close()
+
+# Obtener todas las IPs locales del coordinador (LAN, Tailscale, etc.)
+def get_local_ips():
+    ips = set()
+    try:
+        hostname = socket.gethostname()
+        ips.add(socket.gethostbyname(hostname))
+        for info in socket.getaddrinfo(hostname, None):
+            ip = info[4][0]
+            if ':' not in ip:  # Solo IPv4
+                ips.add(ip)
+    except Exception:
+        pass
+    # También incluye la IP de la variable de entorno si existe
+    env_ip = os.environ.get("COORDINATOR_IP")
+    if env_ip:
+        ips.add(env_ip)
+    return ips
+
+LOCAL_IPS = get_local_ips()
 
 @app.post("/working")
 def update_worker_task(data: WorkerStatus):
@@ -65,14 +86,16 @@ def update_worker_task(data: WorkerStatus):
 
 @app.post("/register")
 def register_node(data: ResourceReport):
-    workers[data.name] = {**data.dict(), "last_seen": time.time()}
-    return {"status": "registered"}
+    is_local = data.ip in LOCAL_IPS
+    workers[data.name] = {**data.dict(), "last_seen": time.time(), "is_local": is_local}
+    return {"status": "registered", "is_local": is_local}
 
 @app.post("/report")
 def update_node(data: ResourceReport):
+    is_local = data.ip in LOCAL_IPS
     if data.name in workers:
-        workers[data.name].update({**data.dict(), "last_seen": time.time()})
-    return {"status": "updated"}
+        workers[data.name].update({**data.dict(), "last_seen": time.time(), "is_local": is_local})
+    return {"status": "updated", "is_local": is_local}
 
 @app.get("/workers")
 def get_workers():

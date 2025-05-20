@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import NodeCard from "./components/NodeCard";
+import StatusCard from "./components/StatusCard";
 import "./App.css";
 
 function App() {
@@ -81,15 +82,7 @@ function App() {
   return (
     <div className="container">
       <h1>Sistema Distribuido</h1>
-      <div className="status">
-        <h3>
-          Tareas en cola: <span style={{ color: "#194dcf" }}>{queueSize}</span>
-        </h3>
-        <h3>
-          Tareas procesadas por segundo (TPS):{" "}
-          <span style={{ color: "#194dcf" }}>{tps}</span>
-        </h3>
-      </div>
+      <StatusCard queueSize={queueSize} tps={tps} />
 
       <div className="card-list">
         {Object.entries(nodes).map(([name, info]) => (
@@ -97,12 +90,10 @@ function App() {
             key={name}
             name={name}
             info={info}
-            isCoordinator={info.isCoordinator}
+            isLocal={info.is_local}
           />
         ))}
       </div>
-
-      <hr />
 
       <h2>Subir imagen para procesar</h2>
       <input className="input" type="file" onChange={handleFileChange} />
