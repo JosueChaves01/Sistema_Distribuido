@@ -1,6 +1,6 @@
 # Sistema Distribuido
 
-**Sistema Distribuido** es una aplicación distribuida desarrollada en Python, diseñada para gestionar información académica en una institución educativa. Implementa servicios web utilizando tecnologías como RabbitMQ para la comunicación entre componentes, permitiendo operaciones CRUD sobre entidades como profesores y grupos.
+**Sistema Distribuido** es una aplicación distribuida desarrollada en Python, diseñada para gestionar información. Implementa servicios web utilizando tecnologías como RabbitMQ para la comunicación entre componentes.
 
 ## 🛠️ Tecnologías Utilizadas
 
